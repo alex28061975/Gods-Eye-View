@@ -9,7 +9,7 @@
   "homepage": "https://github.com/bilawalsidhu/gods-eye-view#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bilawalsidhu/gods-eye-view.git"
+    "url": "git+https://github.com/bilawalsidhu/gods-eye-view.git"
   },
   "bugs": {
     "url": "https://github.com/bilawalsidhu/gods-eye-view/issues"
@@ -44,24 +44,32 @@
     "test:track": "node scripts/track-regression.mjs",
     "qa:map-source-tray": "node scripts/qa-map-source-tray.mjs",
     "check:boundaries": "node scripts/check-import-directions.mjs && node scripts/check-package-boundaries.mjs",
-    "qa:transit": "node scripts/qa-transit.mjs"
+    "qa:transit": "node scripts/qa-transit.mjs",
+    "skills": "skills",
+    "skills:list": "skills list"
   },
   "dependencies": {
     "@jtarrio/signals": "^0.10.0",
     "@jtarrio/webrtlsdr": "^3.0.6",
     "@mapbox/vector-tile": "^3.0.0",
     "@meri-imperiumi/eccodes-wasm": "^2.48.2",
+    "@vladmandic/human": "^3.3.6",
+    "body-parser": "^2.3.0",
     "cesium": "^1.124.0",
     "egm96-universal": "^1.1.1",
+    "express": "^5.2.1",
     "hls.js": "^1.7.3",
+    "joi": "^18.2.9",
     "mgrs": "^2.1.0",
     "pbf": "^5.1.2",
+    "qrcode": "^1.5.4",
     "satellite.js": "^6.0.2"
   },
   "devDependencies": {
     "prettier": "3.9.6",
     "puppeteer": "^25.10.0",
     "sharp": "^0.35.4",
+    "skills": "^1.7.0",
     "vite": "^6.0.0",
     "vite-plugin-cesium": "^1.2.23",
     "ws": "^8.21.0"
@@ -249,5 +257,10 @@
     "./layers/transit/source": "./src/layers/transit/source.js",
     "./sources/transit-service": "./src/sources/transitService.js",
     "./sources/map-features": "./src/sources/overpassFeatures.js"
+  },
+  "main": "vite.config.js",
+  "directories": {
+    "doc": "docs",
+    "test": "test"
   }
 }
