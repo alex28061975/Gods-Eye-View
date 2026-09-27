@@ -3,6 +3,22 @@ import { stampInitialShareGesture } from '../navigationPolicy.js';
 import { canPresentDeferredStatusNotice } from '../loadingFeedback.js';
 import { UiLifetime } from './uiLifetime.js';
 
+/** Wording shared with the other deferred share-restore notices. */
+export const INVALID_SHARE_LAYER_SELECTION_NOTICE =
+  'Shared layer selection could not be restored';
+
+/**
+ * Notice when a v2 share rejected its layer token set.
+ * Valid empty and known-token payloads stay silent. Unknown tokens are not salvaged.
+ * @param {{ layerStateInvalid?: boolean } | null | undefined} state
+ * @returns {string | null}
+ */
+export function invalidShareLayerSelectionNotice(state) {
+  return state?.layerStateInvalid === true
+    ? INVALID_SHARE_LAYER_SELECTION_NOTICE
+    : null;
+}
+
 /** Own initial share restoration, durable layer state and restoration notices. */
 export class ShareRestoration {
   constructor({
@@ -97,6 +113,13 @@ export class ShareRestoration {
           }
         })();
       }, 1500);
+      const invalidLayerNotice = invalidShareLayerSelectionNotice(savedState);
+      if (invalidLayerNotice) {
+        this._scheduleDeferredShareNotice(
+          invalidLayerNotice,
+          ++this._shareTrackingNoticeGeneration,
+        );
+      }
     } else {
       this.syncShareState();
     }
@@ -221,6 +244,54 @@ export class ShareRestoration {
         : result.classification === 'source-unavailable'
           ? `Shared ${subject} could not be restored — feed unavailable`
           : `Shared ${subject} is unavailable`;
+    const showAfterStartupCover = () => {
+      this._lifetime.frame(() => {
+        if (
+          !canPresentDeferredStatusNotice(
+            noticeGeneration,
+            this._shareTrackingNoticeGeneration,
+            this._disposed,
+          )
+        )
+          return;
+        const startupCover = document.getElementById('loading-screen');
+        if (
+          !startupCover ||
+          getComputedStyle(startupCover).visibility === 'hidden'
+        ) {
+          this.showStatus(message);
+          return;
+        }
+        let fallbackTimer = null;
+        let removeStartupListener = () => {};
+        const showOnce = () => {
+          removeStartupListener();
+          if (fallbackTimer) this._lifetime.cancelTimeout(fallbackTimer);
+          if (
+            canPresentDeferredStatusNotice(
+              noticeGeneration,
+              this._shareTrackingNoticeGeneration,
+              this._disposed,
+            )
+          )
+            this.showStatus(message);
+        };
+        removeStartupListener = this._lifetime.listen(
+          startupCover,
+          'transitionend',
+          showOnce,
+          { once: true },
+        );
+        fallbackTimer = this._lifetime.timeout(showOnce, 1000);
+      });
+    };
+    if (this._resolveInitialShareRestore) {
+      void this.initialRestorePromise.then(showAfterStartupCover);
+      return;
+    }
+    showAfterStartupCover();
+  }
+  _scheduleDeferredShareNotice(message, noticeGeneration) {
     const showAfterStartupCover = () => {
       this._lifetime.frame(() => {
         if (

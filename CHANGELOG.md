@@ -1,5 +1,12 @@
 # Changelog
 
+- Say when a shared layer selection was rejected. A v2 link with an unknown
+  or over-cap layer token still fail-closes to the default layers, and unknown
+  tokens are not salvaged. After the startup cover clears, the existing
+  deferred notice reads `Shared layer selection could not be restored`, so
+  `Restoring shared view...` is no longer the last word. An explicit empty set
+  and a known-token set stay silent (finding: daikaginza, #776).
+
 - CCTV cameras whose bearing is a guess now say so. Packs mark bearings derived
   from a hash of the camera id as `headingConfidence: 'low'`, but nothing read the
   flag, so roughly 70% of a default catalog rendered like surveyed facings. The HUD
