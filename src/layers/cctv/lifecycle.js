@@ -339,6 +339,12 @@ export function createLifecycle({
      */
     enable() {
       layerState._enabled = true;
+      if (
+        layerState._records.some(
+          (record) => record.camera.cityId === 'warendorf',
+        )
+      )
+        services.credits?.showOsmCredit?.(layerState._viewer);
       layerState._lastUpdate = Date.now();
       // Pick-ownership (H2): camera billboards use the camera id directly;
       // coverage polyline entities use `cctv-<cameraId>-<role>` entity ids.

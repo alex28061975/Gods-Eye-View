@@ -7,6 +7,7 @@ import { governorRequestRender } from '../renderGovernor.js';
 import {
   BHOTE_KOSHI_LOCATOR_CREDIT,
   registerDynamicCredit,
+  showOsmCredit,
 } from './dataCredits.js';
 import { BHOTE_KOSHI_FLOOD_PATH } from './bhoteKoshiFloodPath.js';
 import { INCIDENT_OVERVIEW_PLACES } from './bhoteKoshiIncidentPlaces.js';
@@ -1035,6 +1036,7 @@ export function createBhoteKoshiLocatorLayer({
     renderPresentation();
     viewer.dataSources.add(dataSource);
     registerDynamicCredit(viewer, BHOTE_KOSHI_LOCATOR_CREDIT);
+    showOsmCredit(viewer);
     requestRender('bhote-koshi-locator-callout');
 
     try {

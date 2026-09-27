@@ -345,6 +345,9 @@ test('a stateless candidate keeps no corner, no cooldown, and no fades', () => {
   arbiter.solve([blocker, mover], { capacity: 2, now: 1000 });
   assert.equal(arbiter.states.get('cctv:mover').corner, 'below',
     'it took the free corner while the preferred one was blocked');
+  const paint = arbiter.renderEntries(new Map([[blocker.key, blocker], [mover.key, mover]]), 1000, []);
+  assert.equal(paint.find((entry) => entry.candidate.key === mover.key).placement.corner, 'below',
+    'painting honors this solve’s collision-free corner even without sticky placement');
 
   // Corner is re-decided from geometry, NOT remembered: with the blocker gone the
   // card returns to its preferred placement immediately.
@@ -503,4 +506,22 @@ test('live identities expose selected and temporal fading membership by layer/so
     ['flights', new Set([42])],
   ]));
   assert.equal(arbiter.liveIdentities({ includeFading: true, now: 1501 }).size, 0);
+});
+
+
+test('stateless labels yield occupied slots and re-rank by area on each solve', () => {
+  const make = (key, x, priority) => ({ key, layerId: 'installations', sourceId: key,
+    priority, keyholeAlpha: 1, stateless: true, screenX: x, screenY: 100,
+    placements: [{ corner: 'above', rect: { x, y: 100, w: 100, h: 20 } }],
+  });
+  const large = make('large', 100, 100), small = make('small', 300, 10);
+  const arbiter = new LabelArbiter();
+  arbiter.solve([large, small], { capacity: 2, now: 1000 });
+  assert.equal(arbiter.selectedKeys.size, 2);
+  small.placements[0].rect.x = 100;
+  arbiter.solve([large, small], { capacity: 2, now: 1016 });
+  assert.deepEqual([...arbiter.selectedKeys], ['large'], 'incumbency never forces a stateless overlap');
+  const larger = make('larger', 100, 1000);
+  arbiter.solve([large, small, larger], { capacity: 2, now: 1032 });
+  assert.deepEqual([...arbiter.selectedKeys], ['larger'], 'area priority outranks a smaller incumbent');
 });

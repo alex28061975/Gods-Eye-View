@@ -800,6 +800,7 @@ export function createDirectionsLayer({ services }) {
         disableDepthTestDistance: Number.POSITIVE_INFINITY,
       });
     }
+    services.credits?.showOsmCredit?.(_viewer);
     services.ground.warmGroundFloor(cells);
     _anchorAttempts = 0;
     _anchorStartedAt = Date.now();

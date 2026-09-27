@@ -968,7 +968,8 @@ export class LabelArbiter {
       if (preserveIncumbents) {
         for (let i = 0; i < layerCount && accepted < target; i++) {
           const candidate = layerList[i];
-          if (!this.states.get(candidate.key)?.selected) continue;
+          if (candidate.stateless || !this.states.get(candidate.key)?.selected)
+            continue;
           if (attempt(candidate, true)) accepted++;
         }
       }
@@ -1173,7 +1174,7 @@ export class LabelArbiter {
       if (!candidate) continue;
       const placement = renderPlacement(
         candidate,
-        state.stateless ? undefined : state.corner,
+        state.corner,
         state.lastPlacement,
       );
       if (!placement) continue;

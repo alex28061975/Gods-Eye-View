@@ -37,3 +37,50 @@ test('adsbdb is credited and carries its published route-data restriction', () =
   assert.match(credit.html, /Guillaume Michel/);
   assert.match(credit.html, /href="https:\/\/www\.adsbdb\.com"/);
 });
+
+test('OpenStreetMap has one generic data credit with separate tile and names distributors', () => {
+  const osm = DATA_CREDITS.filter((entry) =>
+    entry.html.includes('openstreetmap.org/copyright'),
+  );
+  assert.equal(osm.length, 1);
+  assert.equal(osm[0].key, 'openstreetmap');
+  assert.match(osm[0].html, /Map and place data/);
+  assert.match(osm[0].html, /© OpenStreetMap contributors/);
+  assert.match(
+    DATA_CREDITS.find((entry) => entry.key === 'openfreemap').html,
+    /Vector tiles:/,
+  );
+  assert.match(
+    DATA_CREDITS.find((entry) => entry.key === 'overture-military-names').html,
+    /Overture Maps Foundation/,
+  );
+});
+
+test('OSM map introduction is shared across layers for the entire viewer session', async (t) => {
+  const { showOsmCredit } = await import('./dataCredits.js');
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const visible = new Set();
+  let renders = 0;
+  const viewer = {
+    creditDisplay: {
+      addStaticCredit: (c) => visible.add(c),
+      removeStaticCredit: (c) => visible.delete(c),
+    },
+    scene: { requestRender: () => renders++ },
+  };
+  assert.equal(showOsmCredit(viewer), true);
+  assert.equal(showOsmCredit(viewer), false);
+  assert.equal(visible.size, 1);
+  const [credit] = visible;
+  assert.equal(credit.showOnScreen, true);
+  assert.match(credit.html, /OpenStreetMap contributors/);
+  assert.match(credit.html, /OpenMapTiles/);
+  t.mock.timers.tick(5000);
+  assert.equal(visible.size, 0);
+  assert.equal(
+    showOsmCredit(viewer),
+    false,
+    'another layer never repeats the session introduction',
+  );
+  assert.equal(renders, 2);
+});
