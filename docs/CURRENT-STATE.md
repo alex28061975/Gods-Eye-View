@@ -3500,7 +3500,11 @@ silently demoting every later lookup for the session.
   deterministic defaults; an explicit empty field means no enabled layers.
 - The registry seals only after all 16 production layers register, and every
   layer has an explicit serialization disposition. Unknown enabled-layer tokens
-  reject the layer payload; unknown option tokens are ignored. Restoration
+  reject the layer payload; unknown option tokens are ignored. A rejected v2
+  layer token set still fail-closes to the default layers and does not salvage
+  unknown tokens. After the startup cover clears, the existing deferred notice
+  reads `Shared layer selection could not be restored`. An explicit empty set
+  and a known-token set stay silent. Restoration
   settles independently per layer so one failed or unavailable source cannot
   block its siblings.
 - Stable visible options are limited to aircraft 3D mode, selected civilian and

@@ -106,6 +106,129 @@ test('share teardown settles its promise, removes gestures and rejects a retaine
   assert.equal(applies, 0);
 });
 
+test('a rejected shared layer payload says the selection could not be restored', async (t) => {
+  const prior = {
+    window: globalThis.window,
+    document: globalThis.document,
+    setTimeout: globalThis.setTimeout,
+    clearTimeout: globalThis.clearTimeout,
+    requestAnimationFrame: globalThis.requestAnimationFrame,
+    cancelAnimationFrame: globalThis.cancelAnimationFrame,
+  };
+  const timers = new Map();
+  const frames = [];
+  let timerId = 0;
+  globalThis.window = new EventTarget();
+  globalThis.document = { getElementById: () => null };
+  globalThis.setTimeout = (fn) => {
+    timers.set(++timerId, fn);
+    return timerId;
+  };
+  globalThis.clearTimeout = (id) => timers.delete(id);
+  globalThis.requestAnimationFrame = (fn) => {
+    frames.push(fn);
+    return frames.length;
+  };
+  globalThis.cancelAnimationFrame = () => {};
+  t.after(() => Object.assign(globalThis, prior));
+  const notices = [];
+  const owner = new ShareRestoration({
+    viewer: { canvas: new EventTarget() },
+    navigation: {
+      _beginDeferredNavigation: () => 1,
+      _reassertNavigationHandoff: () => true,
+      _stampNavigation() {},
+    },
+    syncShareState() {},
+    syncModels3d() {},
+    showStatus(message) {
+      notices.push(message);
+    },
+    feedback: {},
+    updateFeedback() {},
+  });
+  owner.attachLinks({
+    parseInitialHash: () => ({
+      latitude: 30,
+      longitude: -97,
+      layerState: null,
+      layerStateInvalid: true,
+    }),
+    applyState: async () => ({ camera: 'applied' }),
+    completeInitialRestore() {},
+  });
+  owner.start();
+  assert.deepEqual(notices, []);
+  [...timers.values()][0]();
+  await owner.initialRestorePromise;
+  await Promise.resolve();
+  for (const frame of frames) frame(0);
+  assert.deepEqual(notices, ['Shared layer selection could not be restored']);
+});
+
+test('valid shared layer payloads stay silent', async (t) => {
+  const prior = {
+    window: globalThis.window,
+    document: globalThis.document,
+    setTimeout: globalThis.setTimeout,
+    clearTimeout: globalThis.clearTimeout,
+    requestAnimationFrame: globalThis.requestAnimationFrame,
+    cancelAnimationFrame: globalThis.cancelAnimationFrame,
+  };
+  const timers = new Map();
+  const frames = [];
+  let timerId = 0;
+  globalThis.window = new EventTarget();
+  globalThis.document = { getElementById: () => null };
+  globalThis.setTimeout = (fn) => {
+    timers.set(++timerId, fn);
+    return timerId;
+  };
+  globalThis.clearTimeout = (id) => timers.delete(id);
+  globalThis.requestAnimationFrame = (fn) => {
+    frames.push(fn);
+    return frames.length;
+  };
+  globalThis.cancelAnimationFrame = () => {};
+  t.after(() => Object.assign(globalThis, prior));
+  const notices = [];
+  for (const layerState of [
+    { layerState: ['flights'], layerStateInvalid: false },
+    { layerState: [], layerStateInvalid: false },
+    { layerState: ['flights'] },
+  ]) {
+    timers.clear();
+    frames.length = 0;
+    const owner = new ShareRestoration({
+      viewer: { canvas: new EventTarget() },
+      navigation: {
+        _beginDeferredNavigation: () => 1,
+        _reassertNavigationHandoff: () => true,
+        _stampNavigation() {},
+      },
+      syncShareState() {},
+      syncModels3d() {},
+      showStatus(message) {
+        notices.push(message);
+      },
+      feedback: {},
+      updateFeedback() {},
+    });
+    owner.attachLinks({
+      parseInitialHash: () => ({ latitude: 30, longitude: -97, ...layerState }),
+      applyState: async () => ({ camera: 'applied' }),
+      completeInitialRestore() {},
+    });
+    owner.start();
+    [...timers.values()][0]();
+    await owner.initialRestorePromise;
+    await Promise.resolve();
+    for (const frame of frames) frame(0);
+    owner.destroy();
+  }
+  assert.deepEqual(notices, []);
+});
+
 test('visual teardown restores owned fog and aircraft sensor state once', async (t) => {
   const { VisualSettings } = await import('./visualSettings.js');
   const priorDocument = globalThis.document;
