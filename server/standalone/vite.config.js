@@ -12,12 +12,17 @@ export default defineConfig(({ command, mode }) => {
   for (const [key, value] of Object.entries(loaded)) {
     if (process.env[key] === undefined) process.env[key] = value;
   }
-  return createBrowserViteConfig({
+  const config = createBrowserViteConfig({
     plugins: [...localProviderPlugins(), apiNotFoundPlugin()],
     googleApiKey: process.env.GOOGLE_MAPS_API_KEY,
     cesiumToken: process.env.CESIUM_ION_TOKEN,
-    host: process.env.HOST,
-    port: process.env.PORT,
+    host: process.env.HOST || '0.0.0.0',
+    port: process.env.PORT || 3000,
     command,
   });
+  if (config.server?.headers) {
+    delete config.server.headers['X-Frame-Options'];
+    delete config.server.headers['Content-Security-Policy'];
+  }
+  return config;
 });
